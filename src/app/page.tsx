@@ -1,65 +1,96 @@
-import Image from "next/image";
+import AntigravityCard from '@/components/AntigravityCard';
+import ParliamentChart from '@/components/ParliamentChart';
+import DataTable from '@/components/DataTable';
+import YearSelector from '@/components/YearSelector';
+import MapChart from '@/components/MapChart';
+import { scrapeECIResults } from '@/lib/scraper';
+import { Activity, Map, Table2, TrendingUp } from 'lucide-react';
 
-export default function Home() {
+export const revalidate = 60; // Revalidate every minute
+
+type Props = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
+
+export default async function Home({ searchParams }: Props) {
+  // Await searchParams in Next 15
+  const params = await searchParams;
+  const year = typeof params.year === 'string' ? params.year : 'live';
+
+  // Fetch data based on selected year
+  const results = await scrapeECIResults('S03', year, true);
+  
+  const isLive = year === 'live';
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main className="min-h-screen p-4 md:p-8 lg:p-12 max-w-[1600px] mx-auto space-y-6">
+      
+      {/* Top Bar / Marquee Area */}
+      <div className="w-full bg-blue-600/20 border border-blue-500/30 text-blue-200 px-4 py-2 rounded-lg flex items-center space-x-3 overflow-hidden">
+        <Activity className="w-4 h-4 shrink-0 animate-pulse text-blue-400" />
+        <div className="text-sm font-medium whitespace-nowrap animate-[marquee_20s_linear_infinite]">
+          LATEST INTELLIGENCE: {isLive ? 'Counting currently active. Next update expected in 2 minutes.' : `Viewing finalized results for ${year}.`}
+        </div>
+      </div>
+
+      {/* Header & Controls */}
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-white/10">
+        <div>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-600 drop-shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+            Election Intelligence
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-lg text-zinc-400 font-light tracking-wide mt-2">
+            Advanced Analytics & Operations Center
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className="flex flex-col items-end gap-2">
+          <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">Select Dataset</span>
+          <YearSelector />
         </div>
-      </main>
-    </div>
+      </header>
+
+      {/* Main Dashboard Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 auto-rows-[minmax(250px,auto)]">
+        
+        {/* Parliament Arch / Path to 272 */}
+        <div className="col-span-1 lg:col-span-7 row-span-2">
+          <AntigravityCard>
+            <div className="flex items-center space-x-3 mb-6">
+              <TrendingUp className="w-6 h-6 text-orange-400" />
+              <h2 className="text-xl font-bold tracking-tight">Path to Majority (272)</h2>
+            </div>
+            <div className="w-full flex-grow flex items-end justify-center pt-8">
+              <ParliamentChart data={results} />
+            </div>
+          </AntigravityCard>
+        </div>
+
+        {/* Data Table */}
+        <div className="col-span-1 lg:col-span-5 row-span-2">
+          <AntigravityCard>
+            <div className="flex items-center space-x-3 mb-4">
+              <Table2 className="w-5 h-5 text-purple-400" />
+              <h2 className="text-lg font-bold tracking-tight">Detailed Breakdown</h2>
+            </div>
+            <DataTable data={results} />
+          </AntigravityCard>
+        </div>
+
+        {/* Live Swing Map */}
+        <div className="col-span-1 lg:col-span-12 h-[500px]">
+          <AntigravityCard>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-3">
+                <Map className="w-5 h-5 text-green-400" />
+                <h2 className="text-lg font-bold tracking-tight">Geospatial Swing Analysis</h2>
+              </div>
+            </div>
+            <MapChart />
+          </AntigravityCard>
+        </div>
+
+      </div>
+
+    </main>
   );
 }
